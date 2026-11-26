@@ -140,10 +140,12 @@ namespace LocalBloops
         {
             TelemetryFrame frame;
             bool hasFrame;
+            LiveLap? live;
             lock (_frameLock)
             {
                 frame = _frame;
                 hasFrame = _hasFrame;
+                live = _recorder.Current;
             }
 
             var reference = _reference;
@@ -152,7 +154,7 @@ namespace LocalBloops
             if (len <= 0 && hasFrame && frame.LapDistPct > 0.05f) len = frame.LapDist / frame.LapDistPct;
             if (len <= 0) len = 4000;
 
-            return new RenderState(_connected, hasFrame, frame, _recorder.Current, reference, len);
+            return new RenderState(_connected, hasFrame, frame, live, reference, len);
         }
 
         // ---- telemetry thread ----
@@ -207,12 +209,14 @@ namespace LocalBloops
 
         private void OnFrame(TelemetryFrame f)
         {
+            // Frame and lap state are published together so the overlay never pairs a new
+            // LapDistPct with the previous lap's start time (a one-frame delta spike at the line).
             lock (_frameLock)
             {
+                _recorder.Add(f);
                 _frame = f;
                 _hasFrame = true;
             }
-            _recorder.Add(f);
         }
 
         private void OnLapCompleted(LapData lap)
