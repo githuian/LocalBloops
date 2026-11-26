@@ -106,8 +106,15 @@ namespace LocalBloops.Overlay
             double top = Pad + HeaderHeight + 4;
             double avail = h - top - Pad;
             if (avail < 30) return;
-            var speedRect = new Rect(Pad, top, w - 2 * Pad, avail * 0.56 - 3);
-            var pedalRect = new Rect(Pad, speedRect.Bottom + 6, w - 2 * Pad, avail - speedRect.Height - 6);
+
+            // Big gear readout in a column on the right, spanning both trace panels.
+            double gearW = Math.Clamp(avail * 0.75, 56, Math.Max(56, w * 0.25));
+            var gearRect = new Rect(w - Pad - gearW, top, gearW, avail);
+            DrawGearPanel(dc, gearRect, st, dpi);
+
+            double traceW = Math.Max(20, gearRect.Left - 6 - Pad);
+            var speedRect = new Rect(Pad, top, traceW, avail * 0.56 - 3);
+            var pedalRect = new Rect(Pad, speedRect.Bottom + 6, traceW, avail - speedRect.Height - 6);
 
             var s = _controller.Settings;
             double behindPct = s.MetersBehind / st.TrackLengthMeters;
@@ -232,8 +239,41 @@ namespace LocalBloops.Overlay
             DrawLive(dc, BrakeLive, r, tw, st.Live, g => g.Brake, Y);
             DrawCar(dc, r, tw);
 
-            var ft = Format($"THR {st.Frame.Throttle * 100:0}%   BRK {st.Frame.Brake * 100:0}%   G {GearText(st.Frame.Gear)}", 11, Text, dpi, Ui);
+            var ft = Format($"THR {st.Frame.Throttle * 100:0}%   BRK {st.Frame.Brake * 100:0}%", 11, Text, dpi, Ui);
             dc.DrawText(ft, new Point(r.Left + 5, r.Top + 2));
+        }
+
+        /// <summary>
+        /// Current gear in large text. Green when lower than the reference gear at this point of the
+        /// lap, red when higher, white when equal (or when there's no reference).
+        /// </summary>
+        private static void DrawGearPanel(DrawingContext dc, Rect r, RenderState st, double dpi)
+        {
+            if (r.Height < 10 || r.Width < 10) return;
+            dc.DrawRoundedRectangle(PanelBrush, null, r, 4, 4);
+
+            int gear = st.Frame.Gear;
+            int? refGear = null;
+            var reference = st.Reference?.Lap;
+            if (reference != null)
+                refGear = (int)Math.Round(reference.Gear[Bin(st.Frame.LapDistPct)]);
+
+            Brush brush = Text;
+            if (refGear is int rg)
+            {
+                if (gear < rg) brush = Ahead;
+                else if (gear > rg) brush = Behind;
+            }
+
+            double labelH = r.Height * 0.2;
+            double size = Math.Max(10, Math.Min((r.Height - labelH) * 0.95, r.Width * 1.1));
+            var big = Format(GearText(gear), size, brush, dpi, UiBold);
+            double bigTop = r.Top + (r.Height - labelH - big.Height) / 2;
+            dc.DrawText(big, new Point(r.Left + (r.Width - big.Width) / 2, bigTop));
+
+            string sub = refGear is int g ? "ref " + GearText(g) : "gear";
+            var small = Format(sub, Math.Clamp(labelH * 0.6, 9, 14), DimText, dpi, Ui);
+            dc.DrawText(small, new Point(r.Left + (r.Width - small.Width) / 2, r.Bottom - small.Height - 3));
         }
 
         private static void DrawCar(DrawingContext dc, Rect r, TraceWindow tw)
