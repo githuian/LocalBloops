@@ -121,22 +121,32 @@ namespace LocalBloops.Overlay
         /// </summary>
         public void ApplyCar(string? carPath)
         {
-            if (string.Equals(carPath, _carPath, StringComparison.Ordinal)) return;
+            if (string.Equals(carPath, _carPath, StringComparison.Ordinal))
+            {
+                Log.Info($"ApplyCar '{carPath}': already on this car, nothing to do");
+                return;
+            }
             if (_saveTimer.IsEnabled)
             {
                 // Pending change belongs to the previous car.
                 _saveTimer.Stop();
                 SaveBounds();
             }
+            string? previous = _carPath;
             _carPath = carPath;
 
             var b = _controller.Settings.GetCarBounds(carPath);
-            if (b == null) return;
+            if (b == null)
+            {
+                Log.Info($"ApplyCar '{previous}' -> '{carPath}': no saved layout, staying at {Left:0},{Top:0} {Width:0}x{Height:0}");
+                return;
+            }
             _applyingBounds = true;
             try
             {
                 SetBoundsFrom(b);
                 EnsureOnScreen();
+                Log.Info($"ApplyCar '{previous}' -> '{carPath}': moved to {Left:0},{Top:0} {Width:0}x{Height:0}");
             }
             finally
             {
@@ -265,10 +275,12 @@ namespace LocalBloops.Overlay
                 ActualWidth > 0 ? ActualWidth : Width,
                 ActualHeight > 0 ? ActualHeight : Height);
             s.Save();
+            Log.Info($"Saved layout for '{_carPath}': {Left:0},{Top:0} {ActualWidth:0}x{ActualHeight:0}");
         }
 
         protected override void OnClosed(EventArgs e)
         {
+            Log.Info($"Overlay window closed (car '{_carPath}')");
             _topmostTimer.Stop();
             if (_saveTimer.IsEnabled)
             {

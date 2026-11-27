@@ -106,12 +106,17 @@ namespace LocalBloops
                 if (File.Exists(AppPaths.SettingsFile))
                 {
                     var s = JsonSerializer.Deserialize<Settings>(File.ReadAllText(AppPaths.SettingsFile), Json);
-                    if (s != null) return s;
+                    if (s != null)
+                    {
+                        Log.Info($"Settings loaded from {AppPaths.SettingsFile} ({s.CarBounds?.Count ?? 0} car layouts)");
+                        return s;
+                    }
                 }
+                Log.Info($"No settings at {AppPaths.SettingsFile}; using defaults");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Settings: " + ex.Message);
+                Log.Error("Loading settings failed; using defaults", ex);
             }
             return new Settings();
         }
@@ -125,7 +130,7 @@ namespace LocalBloops
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Settings: " + ex.Message);
+                Log.Error("Saving settings failed", ex);
             }
         }
     }

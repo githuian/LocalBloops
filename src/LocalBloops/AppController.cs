@@ -122,6 +122,7 @@ namespace LocalBloops
         /// </summary>
         private void CreateOverlay()
         {
+            Log.Info($"Creating overlay window (session car '{_session?.CarPath}')");
             var overlay = new OverlayWindow(this);
             overlay.Closed += (_, _) =>
             {
@@ -179,6 +180,7 @@ namespace LocalBloops
 
         private void OnConnectionChanged(bool connected)
         {
+            Log.Info(connected ? "iRacing connected (in a session)" : "iRacing disconnected");
             _connected = connected;
             if (!connected)
             {
@@ -196,10 +198,16 @@ namespace LocalBloops
         {
             var old = _session;
             _session = info;
+            if (old?.CarPath != info.CarPath || old?.TrackId != info.TrackId)
+                Log.Info($"Session: car '{info.CarPath}' track '{info.TrackId}' (was car '{old?.CarPath}' track '{old?.TrackId}')");
             if (!string.IsNullOrEmpty(info.CarPath) && old?.CarPath != info.CarPath)
             {
                 var car = info.CarPath;
-                Ui(() => _overlay?.ApplyCar(car));
+                Ui(() =>
+                {
+                    if (_overlay == null) Log.Info($"Car changed to '{car}' but there's no overlay window");
+                    _overlay?.ApplyCar(car);
+                });
             }
             if (old?.ComboKey == info.ComboKey) return;
 
