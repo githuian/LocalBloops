@@ -1,0 +1,51 @@
+name: Release
+
+# Push a tag like v0.1.0 to build the Windows installer and publish a GitHub release with it.
+# Running it by hand (workflow_dispatch) builds the installer as a downloadable artifact only.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install Inno Setup if missing
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup -y --no-progress
+          }
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME } else { '' }
+          if ($version) { ./installer/build-installer.ps1 -Version $version } else { ./installer/build-installer.ps1 }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LocalBloops-Setup
+          path: artifacts/LocalBloops-Setup-*.exe
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/LocalBloops-Setup-*.exe
+          generate_release_notes: true
+          body: |
+            **Download the `LocalBloops-Setup-….exe` file below and run it.** It installs for your Windows user (no admin needed) and bundles .NET, so nothing else is required.
+
+            Windows may show a SmartScreen warning because the installer isn't code-signed: choose *More info → Run anyway*.

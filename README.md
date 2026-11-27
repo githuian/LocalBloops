@@ -11,6 +11,30 @@ service, and it has no NuGet dependencies (the irsdk reader is built in).
 > or with the sim closed set `fullScreen=0` and `border=0` in `Documents\iRacing\rendererDX11Monitor.ini`.
 > In borderless mode the sim makes itself always-on-top, so LocalBloops attaches the overlay to the sim window to stay above it.
 
+## Install
+
+Download `LocalBloops-Setup-<version>.exe` from the
+[latest release](https://github.com/githuian/LocalBloops/releases/latest) and run it. It installs for your
+Windows user into `%LocalAppData%\Programs\LocalBloops` (no admin rights needed) and bundles .NET, so nothing
+else is required. The installer isn't code-signed, so SmartScreen may warn you: choose *More info → Run anyway*.
+Uninstall from Windows Settings → Apps. Your settings and saved laps in `%LocalAppData%\LocalBloops` are kept.
+
+### Making a release
+
+Bump `<Version>` in `src/LocalBloops/LocalBloops.csproj`, commit, then push a matching tag:
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+The `Release` GitHub Actions workflow builds the installer and publishes the release. To build the installer
+locally (needs the .NET 8 SDK and [Inno Setup 6](https://jrsoftware.org/isinfo.php)):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File installer\build-installer.ps1
+```
+
 ## Build and run
 
 Requires the .NET 8 SDK on Windows.
