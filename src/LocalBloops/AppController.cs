@@ -91,7 +91,8 @@ namespace LocalBloops
         public SessionInfo? Session => _session;
         public ReferenceLap? Reference => _reference;
         public bool OverlayUnlocked => _overlay?.IsUnlocked ?? false;
-        public bool OverlayVisible => _overlay?.IsVisible ?? false;
+        /// <summary>The user's hide/show choice (the overlay is also auto-hidden outside a session).</summary>
+        public bool OverlayVisible => !Settings.OverlayHidden;
 
         public void Start(string[] args)
         {
@@ -133,8 +134,19 @@ namespace LocalBloops
                 }));
             };
             _overlay = overlay;
-            overlay.Show();
-            if (Settings.OverlayHidden) overlay.Hide();
+            overlay.Show(); // creates the HWND (hotkeys need it) before possibly hiding
+            RefreshOverlayVisibility();
+        }
+
+        /// <summary>
+        /// The overlay is on screen only while iRacing is in a session and the user hasn't hidden it.
+        /// While unlocked it stays visible so it can be positioned without the sim running.
+        /// </summary>
+        public void RefreshOverlayVisibility()
+        {
+            var o = _overlay;
+            if (o == null) return;
+            o.SetShown(!Settings.OverlayHidden && (_connected || o.IsUnlocked));
         }
 
         public RenderState GetRenderState()
@@ -166,7 +178,11 @@ namespace LocalBloops
                 _recorder.Reset();
                 lock (_frameLock) _hasFrame = false;
             }
-            Ui(() => _tray?.Refresh());
+            Ui(() =>
+            {
+                RefreshOverlayVisibility();
+                _tray?.Refresh();
+            });
         }
 
         private void OnSessionInfoChanged(SessionInfo info)

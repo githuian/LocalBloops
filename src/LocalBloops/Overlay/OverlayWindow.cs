@@ -198,25 +198,26 @@ namespace LocalBloops.Overlay
                 NativeMethods.SetExStyle(_hwnd, NativeMethods.WS_EX_TRANSPARENT, 0);
                 _frame.BorderBrush = Brushes.Transparent;
                 SaveBounds();
+                _controller.RefreshOverlayVisibility(); // may hide again if iRacing isn't in a session
             }
             _controller.OnTrayStateChanged();
         }
 
+        /// <summary>Flips the user's hide/show choice; whether it's actually on screen is up to the controller.</summary>
         public void ToggleVisible()
         {
-            if (IsVisible)
-            {
-                if (IsUnlocked) SetUnlocked(false);
-                Hide();
-                _controller.Settings.OverlayHidden = true;
-            }
-            else
-            {
-                ShowOverlay();
-                _controller.Settings.OverlayHidden = false;
-            }
-            _controller.Settings.Save();
+            var s = _controller.Settings;
+            if (!s.OverlayHidden && IsUnlocked) SetUnlocked(false);
+            s.OverlayHidden = !s.OverlayHidden;
+            s.Save();
+            _controller.RefreshOverlayVisibility();
             _controller.OnTrayStateChanged();
+        }
+
+        public void SetShown(bool show)
+        {
+            if (show && !IsVisible) ShowOverlay();
+            else if (!show && IsVisible) Hide();
         }
 
         public void SaveBounds()

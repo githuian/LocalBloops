@@ -36,7 +36,7 @@ The app runs from the tray icon. The overlay is click-through, so it never steal
 | Action | How |
 | --- | --- |
 | Move/resize the overlay | **Ctrl+Shift+L** (or tray → *Unlock overlay*) unlocks it and adds an orange border. Drag anywhere inside to move it, or drag an edge or the bottom-right corner to resize, then press it again to lock. The position is saved. If another app already owns a hotkey, a tray notification says so; use the tray menu instead. |
-| Hide/show the overlay | **Ctrl+Shift+H**, or double-click the tray icon |
+| Hide/show the overlay | **Ctrl+Shift+H**, or double-click the tray icon. The overlay also hides by itself whenever iRacing isn't in a session, and comes back when you join one. While unlocked it stays visible so you can position it. |
 | Overlay a Garage 61 lap | Download the lap's telemetry CSV from Garage 61, then go to tray → *Load reference from Garage 61 CSV…* (opens in `Downloads`). The lap stays the reference across sessions and restarts until you pick another one. If the session's track length differs from the lap's by more than 3%, a tray notification warns you. |
 | Load a reference from an `.ibt` | Tray → *Load reference from .ibt…* (opens in `Documents\iRacing\telemetry`). The fastest valid lap in the file is used. |
 | Compare to your best | Tray → *Use my best lap* |
