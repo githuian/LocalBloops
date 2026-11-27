@@ -108,7 +108,8 @@ namespace LocalBloops.Overlay
             if (avail < 30) return;
 
             // Big gear readout in a column on the right, spanning both trace panels.
-            double gearW = Math.Clamp(avail * 0.75, 56, Math.Max(56, w * 0.25));
+            // At least ~28% of the width so the speed delta and gear stay big on short overlays.
+            double gearW = Math.Clamp(Math.Max(avail * 0.75, w * 0.28), 56, Math.Max(56, w * 0.35));
             var gearRect = new Rect(w - Pad - gearW, top, gearW, avail);
             DrawGearPanel(dc, gearRect, st, _controller.Settings.UseMph, dpi);
 
@@ -275,9 +276,6 @@ namespace LocalBloops.Overlay
                 else if (gear > rg) brush = Behind;
             }
 
-            double labelH = r.Height * 0.2;
-            double deltaH = r.Height * 0.24;
-
             // Speed delta (live minus reference at the same lap-distance), in the chosen units.
             string deltaText = "–";
             Brush deltaBrush = DimText;
@@ -289,21 +287,53 @@ namespace LocalBloops.Overlay
                 deltaText = (rounded > 0 ? "+" : rounded < 0 ? "-" : "±") + Math.Abs(rounded).ToString(CultureInfo.InvariantCulture);
                 deltaBrush = rounded > 0 ? Ahead : rounded < 0 ? Behind : Text;
             }
-            var dft = Format(deltaText, Math.Clamp(deltaH * 0.7, 10, r.Width * 0.4), deltaBrush, dpi, Mono);
-            dft.MaxTextWidth = Math.Max(10, r.Width - 4);
-            dft.MaxLineCount = 1;
-            dc.DrawText(dft, new Point(r.Left + (r.Width - dft.Width) / 2, r.Top + 3));
-
-            double bigArea = r.Height - labelH - deltaH;
-            // Line height is ~1.33x the font size, so this keeps the digit inside its slot.
-            double size = Math.Max(10, Math.Min(bigArea * 0.75, r.Width * 1.1));
-            var big = Format(GearText(gear), size, brush, dpi, UiBold);
-            double bigTop = r.Top + deltaH + (bigArea - big.Height) / 2;
-            dc.DrawText(big, new Point(r.Left + (r.Width - big.Width) / 2, bigTop));
-
             string sub = refGear is int g ? "ref " + GearText(g) : "gear";
-            var small = Format(sub, Math.Clamp(labelH * 0.6, 9, 14), DimText, dpi, Ui);
-            dc.DrawText(small, new Point(r.Left + (r.Width - small.Width) / 2, r.Bottom - small.Height - 3));
+
+            // Short, wide panel: speed delta + "ref N" on the left, gear on the right, so both get
+            // the full height. Otherwise stack delta / gear / "ref N" vertically.
+            if (r.Width >= r.Height * 1.4)
+            {
+                double leftW = r.Width * 0.58;
+                var left = new Rect(r.Left, r.Top, leftW, r.Height);
+                var right = new Rect(r.Left + leftW, r.Top, r.Width - leftW, r.Height);
+                double labelH = Math.Max(16, r.Height * 0.22);
+                DrawSpeedDelta(dc, deltaText, deltaBrush, new Rect(left.Left, left.Top, left.Width, left.Height - labelH), dpi);
+                DrawSubLabel(dc, sub, new Rect(left.Left, left.Bottom - labelH, left.Width, labelH), dpi);
+                DrawGearDigit(dc, GearText(gear), brush, right, dpi);
+            }
+            else
+            {
+                // "ref N" caps at 14px, so it needs little room; the speed delta gets a third of the panel.
+                double labelH = Math.Max(20, r.Height * 0.12);
+                double deltaH = r.Height * 0.34;
+                DrawSpeedDelta(dc, deltaText, deltaBrush, new Rect(r.Left, r.Top, r.Width, deltaH), dpi);
+                DrawGearDigit(dc, GearText(gear), brush, new Rect(r.Left, r.Top + deltaH, r.Width, r.Height - deltaH - labelH), dpi);
+                DrawSubLabel(dc, sub, new Rect(r.Left, r.Bottom - labelH, r.Width, labelH), dpi);
+            }
+        }
+
+        private static void DrawSpeedDelta(DrawingContext dc, string text, Brush brush, Rect r, double dpi)
+        {
+            // Consolas is ~0.55em per char and its line ~1.17em, so "-162" fits at these sizes.
+            double size = Math.Max(10, Math.Min(r.Height * 0.8, (r.Width - 8) / 2.4));
+            var ft = Format(text, size, brush, dpi, Mono);
+            ft.MaxTextWidth = Math.Max(10, r.Width - 4);
+            ft.MaxLineCount = 1;
+            dc.DrawText(ft, new Point(r.Left + (r.Width - ft.Width) / 2, r.Top + Math.Max(2, (r.Height - ft.Height) / 2)));
+        }
+
+        private static void DrawGearDigit(DrawingContext dc, string text, Brush brush, Rect r, double dpi)
+        {
+            // Line height is ~1.33x the font size, so this keeps the digit inside its slot.
+            double size = Math.Max(10, Math.Min(r.Height * 0.75, r.Width * 1.1));
+            var ft = Format(text, size, brush, dpi, UiBold);
+            dc.DrawText(ft, new Point(r.Left + (r.Width - ft.Width) / 2, r.Top + (r.Height - ft.Height) / 2));
+        }
+
+        private static void DrawSubLabel(DrawingContext dc, string text, Rect r, double dpi)
+        {
+            var ft = Format(text, Math.Clamp(r.Height * 0.6, 9, 14), DimText, dpi, Ui);
+            dc.DrawText(ft, new Point(r.Left + (r.Width - ft.Width) / 2, r.Bottom - ft.Height - 3));
         }
 
         private static void DrawCar(DrawingContext dc, Rect r, TraceWindow tw)
