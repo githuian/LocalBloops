@@ -85,6 +85,7 @@ Settings (overlay bounds, units, options) are stored in `%LocalAppData%\LocalBlo
 The overlay's position and size are saved per car (by iRacing `CarPath`) and saved automatically
 half a second after you stop moving or resizing it. When you switch cars, the overlay jumps to that car's saved
 bounds. A car you haven't placed yet keeps the overlay where it is until you move or resize it.
+Until a car is loaded, the overlay sits at the bottom centre of the primary screen.
 
 ## Layout
 

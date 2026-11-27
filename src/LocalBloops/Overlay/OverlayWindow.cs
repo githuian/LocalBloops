@@ -47,8 +47,10 @@ namespace LocalBloops.Overlay
             Width = Math.Max(MinWidth, s.Width);
             Height = Math.Max(MinHeight, s.Height);
             _carPath = controller.Session?.CarPath;
+            if (string.IsNullOrEmpty(_carPath)) _carPath = null;
             var carBounds = s.GetCarBounds(_carPath);
             if (carBounds != null) SetBoundsFrom(carBounds);
+            else if (_carPath == null) PlaceBottomCenter();
             EnsureOnScreen();
 
             // Auto-save shortly after the user stops moving/resizing, so a drag isn't a write per pixel.
@@ -140,6 +142,15 @@ namespace LocalBloops.Overlay
             }
         }
 
+        /// <summary>Until a car is known, the overlay sits at the bottom centre of the primary screen.</summary>
+        private void PlaceBottomCenter()
+        {
+            const double margin = 40;
+            var wa = SystemParameters.WorkArea;
+            Left = wa.Left + (wa.Width - Width) / 2;
+            Top = wa.Bottom - Height - margin;
+        }
+
         private void SetBoundsFrom(OverlayBounds b)
         {
             Left = b.Left;
@@ -210,6 +221,14 @@ namespace LocalBloops.Overlay
         public void SaveBounds()
         {
             var s = _controller.Settings;
+            if (_carPath == null)
+            {
+                // No car yet: the position is always bottom centre, so only the size is kept.
+                s.Width = ActualWidth > 0 ? ActualWidth : Width;
+                s.Height = ActualHeight > 0 ? ActualHeight : Height;
+                s.Save();
+                return;
+            }
             s.SetBounds(_carPath, Left, Top,
                 ActualWidth > 0 ? ActualWidth : Width,
                 ActualHeight > 0 ? ActualHeight : Height);
