@@ -36,6 +36,7 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayIcon={app}\{#AppExe}
+SetupIconFile=..\src\LocalBloops\Assets\LocalBloops.ico
 UninstallDisplayName={#AppName}
 ; Close a running LocalBloops (it lives in the tray) before replacing its files.
 CloseApplications=force

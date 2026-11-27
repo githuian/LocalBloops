@@ -32,6 +32,7 @@ namespace LocalBloops.Overlay
             var s = controller.Settings;
 
             Title = "LocalBloops";
+            Icon = new System.Windows.Media.Imaging.BitmapImage(new Uri("pack://application:,,,/Assets/LocalBloops.ico"));
             WindowStyle = WindowStyle.None;
             AllowsTransparency = true;
             Background = Brushes.Transparent;
