@@ -41,8 +41,10 @@ The app runs from the tray icon. The overlay is click-through, so it never steal
 | Load a reference from an `.ibt` | Tray → *Load reference from .ibt…* (opens in `Documents\iRacing\telemetry`). The fastest valid lap in the file is used. |
 | Compare to your best | Tray → *Use my best lap* |
 | Compare to your last lap | Tray → *Use last lap* |
+| Show/hide the speed chart | Tray → *Show speed chart* (on by default, remembered per car; when off, the throttle/brake trace uses the full height) |
 | Speed units | Tray → *Speed in mph* (km/h by default) |
 | Off-track rule | Tray → *Off-track invalidates lap* (on by default) |
+| Start with Windows | Tray → *Start with Windows* (off by default; adds LocalBloops to your user's startup apps, no admin needed) |
 | See saved laps | Tray → *Open laps folder* |
 
 ### What the overlay shows

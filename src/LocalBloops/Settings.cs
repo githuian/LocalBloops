@@ -58,6 +58,29 @@ namespace LocalBloops
         public double MetersBehind { get; set; } = 150;
         public double MetersAhead { get; set; } = 500;
         public bool OverlayHidden { get; set; }
+        /// <summary>Speed chart visibility when no car is known, or for a car that hasn't set its own.</summary>
+        public bool ShowSpeedChart { get; set; } = true;
+
+        /// <summary>Speed chart visibility per car, keyed by iRacing CarPath.</summary>
+        public Dictionary<string, bool> CarShowSpeedChart { get; set; } = new Dictionary<string, bool>();
+
+        public bool GetShowSpeedChart(string? carPath)
+        {
+            if (!string.IsNullOrEmpty(carPath) && CarShowSpeedChart != null && CarShowSpeedChart.TryGetValue(carPath, out var show))
+                return show;
+            return ShowSpeedChart;
+        }
+
+        public void SetShowSpeedChart(string? carPath, bool show)
+        {
+            if (string.IsNullOrEmpty(carPath))
+            {
+                ShowSpeedChart = show;
+                return;
+            }
+            CarShowSpeedChart ??= new Dictionary<string, bool>();
+            CarShowSpeedChart[carPath] = show;
+        }
 
         /// <summary>Garage 61 CSV used as the reference; reloaded on startup.</summary>
         public string? Garage61Reference { get; set; }

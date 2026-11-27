@@ -112,16 +112,25 @@ namespace LocalBloops.Overlay
             var gearRect = new Rect(w - Pad - gearW, top, gearW, avail);
             DrawGearPanel(dc, gearRect, st, _controller.Settings.UseMph, dpi);
 
-            double traceW = Math.Max(20, gearRect.Left - 6 - Pad);
-            var speedRect = new Rect(Pad, top, traceW, avail * 0.56 - 3);
-            var pedalRect = new Rect(Pad, speedRect.Bottom + 6, traceW, avail - speedRect.Height - 6);
-
             var s = _controller.Settings;
+            double traceW = Math.Max(20, gearRect.Left - 6 - Pad);
+            bool showSpeed = _controller.ShowSpeedChart;
+            Rect speedRect = Rect.Empty, pedalRect;
+            if (showSpeed)
+            {
+                speedRect = new Rect(Pad, top, traceW, avail * 0.56 - 3);
+                pedalRect = new Rect(Pad, speedRect.Bottom + 6, traceW, avail - speedRect.Height - 6);
+            }
+            else
+            {
+                pedalRect = new Rect(Pad, top, traceW, avail); // pedals take the full height
+            }
+
             double behindPct = s.MetersBehind / st.TrackLengthMeters;
             double aheadPct = s.MetersAhead / st.TrackLengthMeters;
             var trace = new TraceWindow(f.LapDistPct, behindPct, aheadPct);
 
-            DrawSpeedPanel(dc, speedRect, trace, st, s.UseMph, dpi);
+            if (showSpeed) DrawSpeedPanel(dc, speedRect, trace, st, s.UseMph, dpi);
             DrawPedalPanel(dc, pedalRect, trace, st, dpi);
         }
 

@@ -18,7 +18,9 @@ namespace LocalBloops
         private readonly WF.ToolStripMenuItem _unlock;
         private readonly WF.ToolStripMenuItem _hide;
         private readonly WF.ToolStripMenuItem _mph;
+        private readonly WF.ToolStripMenuItem _speedChart;
         private readonly WF.ToolStripMenuItem _offTrack;
+        private readonly WF.ToolStripMenuItem _startup;
 
         public TrayIcon(AppController controller)
         {
@@ -29,7 +31,15 @@ namespace LocalBloops
             _unlock = new WF.ToolStripMenuItem("Unlock overlay", null, (_, _) => _controller.ToggleOverlayUnlocked()) { ShortcutKeyDisplayString = "Ctrl+Shift+L" };
             _hide = new WF.ToolStripMenuItem("Hide overlay", null, (_, _) => _controller.ToggleOverlayVisible()) { ShortcutKeyDisplayString = "Ctrl+Shift+H" };
             _mph = new WF.ToolStripMenuItem("Speed in mph", null, (_, _) => { _controller.SetUseMph(!_controller.Settings.UseMph); Refresh(); });
+            _speedChart = new WF.ToolStripMenuItem("Show speed chart", null, (_, _) => { _controller.SetShowSpeedChart(!_controller.ShowSpeedChart); Refresh(); });
             _offTrack = new WF.ToolStripMenuItem("Off-track invalidates lap", null, (_, _) => { _controller.SetOffTrackInvalidates(!_controller.Settings.OffTrackInvalidatesLap); Refresh(); });
+
+            _startup = new WF.ToolStripMenuItem("Start with Windows", null, (_, _) =>
+            {
+                if (!StartupRegistration.SetEnabled(!StartupRegistration.IsEnabled))
+                    Notify("Couldn't change startup", "Windows didn't allow LocalBloops to update its startup entry.");
+                Refresh();
+            });
 
             var menu = new WF.ContextMenuStrip();
             menu.Items.Add(_status);
@@ -42,8 +52,10 @@ namespace LocalBloops
             menu.Items.Add(new WF.ToolStripSeparator());
             menu.Items.Add(_unlock);
             menu.Items.Add(_hide);
+            menu.Items.Add(_speedChart);
             menu.Items.Add(_mph);
             menu.Items.Add(_offTrack);
+            menu.Items.Add(_startup);
             menu.Items.Add(new WF.ToolStripSeparator());
             menu.Items.Add(new WF.ToolStripMenuItem("Open laps folder", null, (_, _) => _controller.OpenLapsFolder()));
             menu.Items.Add(new WF.ToolStripMenuItem("Exit", null, (_, _) => _controller.Exit()));
@@ -73,7 +85,9 @@ namespace LocalBloops
             _unlock.Text = _controller.OverlayUnlocked ? "Lock overlay" : "Unlock overlay (move/resize)";
             _hide.Text = _controller.OverlayVisible ? "Hide overlay" : "Show overlay";
             _mph.Checked = _controller.Settings.UseMph;
+            _speedChart.Checked = _controller.ShowSpeedChart;
             _offTrack.Checked = _controller.Settings.OffTrackInvalidatesLap;
+            _startup.Checked = StartupRegistration.IsEnabled;
 
             string tip = "LocalBloops — " + (_controller.Connected ? "connected" : "waiting for iRacing");
             _icon.Text = Truncate(tip, 63);

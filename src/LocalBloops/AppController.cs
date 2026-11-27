@@ -95,6 +95,7 @@ namespace LocalBloops
 
         public void Start(string[] args)
         {
+            StartupRegistration.RefreshPathIfEnabled();
             CreateOverlay();
 
             _tray = new TrayIcon(this);
@@ -398,6 +399,15 @@ namespace LocalBloops
         public void SetUseMph(bool mph)
         {
             Settings.SpeedUnit = mph ? "mph" : "kmh";
+            Settings.Save();
+        }
+
+        /// <summary>Speed chart visibility for the current car (or the default when no car is loaded).</summary>
+        public bool ShowSpeedChart => Settings.GetShowSpeedChart(_session?.CarPath);
+
+        public void SetShowSpeedChart(bool show)
+        {
+            Settings.SetShowSpeedChart(_session?.CarPath, show);
             Settings.Save();
         }
 
