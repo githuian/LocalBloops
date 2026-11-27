@@ -36,7 +36,7 @@ namespace LocalBloops.Overlay
             AllowsTransparency = true;
             Background = Brushes.Transparent;
             Topmost = true;
-            ShowInTaskbar = false;
+            ShowInTaskbar = s.PinnableWindow; // see ApplyPinnableStyle
             ShowActivated = false;
             ResizeMode = ResizeMode.NoResize;
             WindowStartupLocation = WindowStartupLocation.Manual;
@@ -88,8 +88,9 @@ namespace LocalBloops.Overlay
             _source?.AddHook(WndProc);
 
             NativeMethods.SetExStyle(_hwnd,
-                NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE | NativeMethods.WS_EX_LAYERED | NativeMethods.WS_EX_TRANSPARENT,
+                NativeMethods.WS_EX_NOACTIVATE | NativeMethods.WS_EX_LAYERED | NativeMethods.WS_EX_TRANSPARENT,
                 0);
+            ApplyPinnableStyle();
 
             uint mods = NativeMethods.MOD_CONTROL | NativeMethods.MOD_SHIFT | NativeMethods.MOD_NOREPEAT;
             var failed = new List<string>();
@@ -166,7 +167,7 @@ namespace LocalBloops.Overlay
         /// </summary>
         private void AttachToSim()
         {
-            if (_hwnd == IntPtr.Zero) return;
+            if (_hwnd == IntPtr.Zero || _controller.Settings.PinnableWindow) return;
             IntPtr sim = NativeMethods.FindWindowW(SimWindowClass, null);
             if (sim == _simOwner) return;
             _simOwner = sim;
@@ -175,6 +176,34 @@ namespace LocalBloops.Overlay
 
         private const string SimWindowClass = "SimWinClass";
         private IntPtr _simOwner;
+
+        /// <summary>
+        /// Window pickers (Pimax's VR window pinning, OBS, Alt+Tab) skip tool windows, windows
+        /// without a taskbar button, and owned windows. In pinnable mode the overlay is a normal
+        /// app window instead: listed, with a taskbar button, and not owned by the sim.
+        /// </summary>
+        public void ApplyPinnableStyle()
+        {
+            if (_hwnd == IntPtr.Zero) return;
+            bool pinnable = _controller.Settings.PinnableWindow;
+            bool wasVisible = IsVisible;
+            if (wasVisible) Hide(); // the shell re-reads the style when the window is shown again
+
+            ShowInTaskbar = pinnable; // WPF parks windows without a taskbar button under a hidden owner
+            if (pinnable)
+            {
+                NativeMethods.SetExStyle(_hwnd, NativeMethods.WS_EX_APPWINDOW, NativeMethods.WS_EX_TOOLWINDOW);
+                _simOwner = IntPtr.Zero;
+                new WindowInteropHelper(this).Owner = IntPtr.Zero;
+            }
+            else
+            {
+                NativeMethods.SetExStyle(_hwnd, NativeMethods.WS_EX_TOOLWINDOW, NativeMethods.WS_EX_APPWINDOW);
+                AttachToSim();
+            }
+
+            if (wasVisible) ShowOverlay();
+        }
 
         /// <summary>Set when a global hotkey couldn't be registered.</summary>
         public string? HotkeyError { get; private set; }

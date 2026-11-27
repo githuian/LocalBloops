@@ -21,6 +21,7 @@ namespace LocalBloops
         private readonly WF.ToolStripMenuItem _speedChart;
         private readonly WF.ToolStripMenuItem _offTrack;
         private readonly WF.ToolStripMenuItem _startup;
+        private readonly WF.ToolStripMenuItem _pinnable;
 
         public TrayIcon(AppController controller)
         {
@@ -41,6 +42,8 @@ namespace LocalBloops
                 Refresh();
             });
 
+            _pinnable = new WF.ToolStripMenuItem("Pinnable window (for VR window pinning)", null, (_, _) => { _controller.SetPinnableWindow(!_controller.Settings.PinnableWindow); Refresh(); });
+
             var menu = new WF.ContextMenuStrip();
             menu.Items.Add(_status);
             menu.Items.Add(_reference);
@@ -55,6 +58,7 @@ namespace LocalBloops
             menu.Items.Add(_speedChart);
             menu.Items.Add(_mph);
             menu.Items.Add(_offTrack);
+            menu.Items.Add(_pinnable);
             menu.Items.Add(_startup);
             menu.Items.Add(new WF.ToolStripSeparator());
             menu.Items.Add(new WF.ToolStripMenuItem("Open laps folder", null, (_, _) => _controller.OpenLapsFolder()));
@@ -88,6 +92,7 @@ namespace LocalBloops
             _speedChart.Checked = _controller.ShowSpeedChart;
             _offTrack.Checked = _controller.Settings.OffTrackInvalidatesLap;
             _startup.Checked = StartupRegistration.IsEnabled;
+            _pinnable.Checked = _controller.Settings.PinnableWindow;
 
             string tip = "LocalBloops — " + (_controller.Connected ? "connected" : "waiting for iRacing");
             _icon.Text = Truncate(tip, 63);

@@ -58,6 +58,9 @@ namespace LocalBloops
         public double MetersBehind { get; set; } = 150;
         public double MetersAhead { get; set; } = 500;
         public bool OverlayHidden { get; set; }
+
+        /// <summary>Make the overlay a normal app window so VR window-pinning tools can list it.</summary>
+        public bool PinnableWindow { get; set; }
         /// <summary>Speed chart visibility when no car is known, or for a car that hasn't set its own.</summary>
         public bool ShowSpeedChart { get; set; } = true;
 

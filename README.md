@@ -44,6 +44,7 @@ The app runs from the tray icon. The overlay is click-through, so it never steal
 | Show/hide the speed chart | Tray → *Show speed chart* (on by default, remembered per car; when off, the throttle/brake trace uses the full height) |
 | Speed units | Tray → *Speed in mph* (km/h by default) |
 | Off-track rule | Tray → *Off-track invalidates lap* (on by default) |
+| Pin the overlay in VR | Tray → *Pinnable window (for VR window pinning)*. The overlay becomes a normal app window (with a taskbar button) so tools like Pimax's window pinning or OpenKneeboard can list it. It's no longer attached to the sim window, so on the desktop it may fall behind a borderless sim. |
 | Start with Windows | Tray → *Start with Windows* (off by default; adds LocalBloops to your user's startup apps, no admin needed) |
 | See saved laps | Tray → *Open laps folder* |
 

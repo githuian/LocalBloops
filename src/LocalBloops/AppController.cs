@@ -427,6 +427,13 @@ namespace LocalBloops
             Settings.Save();
         }
 
+        public void SetPinnableWindow(bool pinnable)
+        {
+            Settings.PinnableWindow = pinnable;
+            Settings.Save();
+            _overlay?.ApplyPinnableStyle();
+        }
+
         public void SetOffTrackInvalidates(bool value)
         {
             Settings.OffTrackInvalidatesLap = value;
