@@ -20,6 +20,9 @@ namespace LocalBloops.Overlay
         private readonly AppController _controller;
         private readonly Border _frame;
         private readonly DispatcherTimer _topmostTimer;
+        private readonly DispatcherTimer _saveTimer;
+        private string? _carPath;
+        private bool _applyingBounds;
         private IntPtr _hwnd;
         private HwndSource? _source;
 
@@ -43,7 +46,18 @@ namespace LocalBloops.Overlay
             Top = s.Top;
             Width = Math.Max(MinWidth, s.Width);
             Height = Math.Max(MinHeight, s.Height);
+            _carPath = controller.Session?.CarPath;
+            var carBounds = s.GetCarBounds(_carPath);
+            if (carBounds != null) SetBoundsFrom(carBounds);
             EnsureOnScreen();
+
+            // Auto-save shortly after the user stops moving/resizing, so a drag isn't a write per pixel.
+            _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            _saveTimer.Tick += (_, _) =>
+            {
+                _saveTimer.Stop();
+                SaveBounds();
+            };
 
             _frame = new Border
             {
@@ -84,6 +98,54 @@ namespace LocalBloops.Overlay
             _topmostTimer.Start();
             AttachToSim();
             AssertTopmost();
+
+            // Hooked after the initial bounds are applied so startup doesn't count as a change.
+            LocationChanged += (_, _) => OnBoundsChanged();
+            SizeChanged += (_, _) => OnBoundsChanged();
+        }
+
+        private void OnBoundsChanged()
+        {
+            if (_applyingBounds) return;
+            _saveTimer.Stop();
+            _saveTimer.Start();
+        }
+
+        /// <summary>
+        /// Switches to the car's saved position and size. A car without saved bounds keeps the
+        /// overlay where it is; moving or resizing it then saves bounds for that car.
+        /// </summary>
+        public void ApplyCar(string? carPath)
+        {
+            if (string.Equals(carPath, _carPath, StringComparison.Ordinal)) return;
+            if (_saveTimer.IsEnabled)
+            {
+                // Pending change belongs to the previous car.
+                _saveTimer.Stop();
+                SaveBounds();
+            }
+            _carPath = carPath;
+
+            var b = _controller.Settings.GetCarBounds(carPath);
+            if (b == null) return;
+            _applyingBounds = true;
+            try
+            {
+                SetBoundsFrom(b);
+                EnsureOnScreen();
+            }
+            finally
+            {
+                _applyingBounds = false;
+            }
+        }
+
+        private void SetBoundsFrom(OverlayBounds b)
+        {
+            Left = b.Left;
+            Top = b.Top;
+            Width = Math.Max(MinWidth, b.Width);
+            Height = Math.Max(MinHeight, b.Height);
         }
 
         /// <summary>
@@ -148,16 +210,20 @@ namespace LocalBloops.Overlay
         public void SaveBounds()
         {
             var s = _controller.Settings;
-            s.Left = Left;
-            s.Top = Top;
-            s.Width = ActualWidth > 0 ? ActualWidth : Width;
-            s.Height = ActualHeight > 0 ? ActualHeight : Height;
+            s.SetBounds(_carPath, Left, Top,
+                ActualWidth > 0 ? ActualWidth : Width,
+                ActualHeight > 0 ? ActualHeight : Height);
             s.Save();
         }
 
         protected override void OnClosed(EventArgs e)
         {
             _topmostTimer.Stop();
+            if (_saveTimer.IsEnabled)
+            {
+                _saveTimer.Stop();
+                SaveBounds();
+            }
             if (_hwnd != IntPtr.Zero)
             {
                 NativeMethods.UnregisterHotKey(_hwnd, HotkeyUnlock);

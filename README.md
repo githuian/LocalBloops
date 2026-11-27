@@ -82,6 +82,10 @@ Laps are resampled onto a 2000-point lap-distance grid (time, speed, throttle, b
 
 Settings (overlay bounds, units, options) are stored in `%LocalAppData%\LocalBloops\settings.json`.
 
+The overlay's position and size are saved per car (by iRacing `CarPath`) and saved automatically
+half a second after you stop moving or resizing it. When you switch cars, the overlay jumps to that car's saved
+bounds. A car you haven't placed yet keeps the overlay where it is until you move or resize it.
+
 ## Layout
 
 ```

@@ -172,6 +172,11 @@ namespace LocalBloops
         {
             var old = _session;
             _session = info;
+            if (!string.IsNullOrEmpty(info.CarPath) && old?.CarPath != info.CarPath)
+            {
+                var car = info.CarPath;
+                Ui(() => _overlay?.ApplyCar(car));
+            }
             if (old?.ComboKey == info.ComboKey) return;
 
             _recorder.Reset();
