@@ -19,6 +19,28 @@ namespace LocalBloops.Overlay
 
         public const int WM_HOTKEY = 0x0312;
         public const int WM_NCHITTEST = 0x0084;
+        public const int WM_NCLBUTTONDOWN = 0x00A1;
+        public const int WM_MOUSEMOVE = 0x0200;
+        public const int WM_LBUTTONUP = 0x0202;
+        public const int WM_CAPTURECHANGED = 0x0215;
+        public const uint SWP_NOZORDER = 0x0004;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT
+        {
+            public int X, Y;
+        }
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetCursorPos(out POINT lpPoint);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr SetCapture(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool ReleaseCapture();
 
         public const int HTTRANSPARENT = -1;
         public const int HTCAPTION = 2;

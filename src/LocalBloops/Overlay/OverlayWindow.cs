@@ -194,6 +194,7 @@ namespace LocalBloops.Overlay
             }
             else
             {
+                if (_resizeEdge != 0) NativeMethods.ReleaseCapture();
                 NativeMethods.SetExStyle(_hwnd, NativeMethods.WS_EX_TRANSPARENT, 0);
                 _frame.BorderBrush = Brushes.Transparent;
                 SaveBounds();
@@ -270,7 +271,35 @@ namespace LocalBloops.Overlay
             if (msg == NativeMethods.WM_NCHITTEST)
             {
                 handled = true;
+                if (_resizeEdge != 0) return new IntPtr(_resizeEdge);
                 return new IntPtr(IsUnlocked ? HitTest(lParam) : NativeMethods.HTTRANSPARENT);
+            }
+
+            // The window has no WS_THICKFRAME (it's a transparent layered popup), so Windows ignores
+            // sizing hit-test codes. Edge/corner drags are done here instead: capture the mouse on
+            // button-down and resize from the cursor delta until the button is released.
+            if (msg == NativeMethods.WM_NCLBUTTONDOWN && IsUnlocked && IsSizingEdge(wParam.ToInt32()))
+            {
+                BeginResize(wParam.ToInt32());
+                handled = true;
+                return IntPtr.Zero;
+            }
+            if (_resizeEdge != 0)
+            {
+                switch (msg)
+                {
+                    case NativeMethods.WM_MOUSEMOVE:
+                        ContinueResize();
+                        handled = true;
+                        return IntPtr.Zero;
+                    case NativeMethods.WM_LBUTTONUP:
+                        NativeMethods.ReleaseCapture(); // triggers WM_CAPTURECHANGED
+                        handled = true;
+                        return IntPtr.Zero;
+                    case NativeMethods.WM_CAPTURECHANGED:
+                        _resizeEdge = 0;
+                        break;
+                }
             }
 
             if (msg == NativeMethods.WM_HOTKEY)
@@ -288,6 +317,45 @@ namespace LocalBloops.Overlay
                 }
             }
             return IntPtr.Zero;
+        }
+
+        private int _resizeEdge;
+        private NativeMethods.POINT _resizeStartCursor;
+        private NativeMethods.RECT _resizeStartRect;
+
+        private static bool IsSizingEdge(int hit) => hit >= NativeMethods.HTLEFT && hit <= NativeMethods.HTBOTTOMRIGHT;
+
+        private void BeginResize(int edge)
+        {
+            if (!NativeMethods.GetCursorPos(out _resizeStartCursor) || !NativeMethods.GetWindowRect(_hwnd, out _resizeStartRect)) return;
+            _resizeEdge = edge;
+            NativeMethods.SetCapture(_hwnd);
+        }
+
+        private void ContinueResize()
+        {
+            if (!NativeMethods.GetCursorPos(out var p)) return;
+            int dx = p.X - _resizeStartCursor.X, dy = p.Y - _resizeStartCursor.Y;
+            var r = _resizeStartRect;
+            int left = r.Left, top = r.Top, right = r.Right, bottom = r.Bottom;
+
+            var dpi = VisualTreeHelper.GetDpi(this);
+            int minW = (int)Math.Ceiling(MinWidth * dpi.DpiScaleX);
+            int minH = (int)Math.Ceiling(MinHeight * dpi.DpiScaleY);
+
+            int e = _resizeEdge;
+            bool l = e == NativeMethods.HTLEFT || e == NativeMethods.HTTOPLEFT || e == NativeMethods.HTBOTTOMLEFT;
+            bool rt = e == NativeMethods.HTRIGHT || e == NativeMethods.HTTOPRIGHT || e == NativeMethods.HTBOTTOMRIGHT;
+            bool t = e == NativeMethods.HTTOP || e == NativeMethods.HTTOPLEFT || e == NativeMethods.HTTOPRIGHT;
+            bool b = e == NativeMethods.HTBOTTOM || e == NativeMethods.HTBOTTOMLEFT || e == NativeMethods.HTBOTTOMRIGHT;
+
+            if (l) left = Math.Min(r.Left + dx, right - minW);
+            if (rt) right = Math.Max(r.Right + dx, left + minW);
+            if (t) top = Math.Min(r.Top + dy, bottom - minH);
+            if (b) bottom = Math.Max(r.Bottom + dy, top + minH);
+
+            NativeMethods.SetWindowPos(_hwnd, IntPtr.Zero, left, top, right - left, bottom - top,
+                NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_NOOWNERZORDER);
         }
 
         /// <summary>Edges and corners resize (bottom-right corner is extra large); everything else moves.</summary>
