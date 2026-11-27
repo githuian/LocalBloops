@@ -146,7 +146,14 @@ namespace LocalBloops
         {
             var o = _overlay;
             if (o == null) return;
-            o.SetShown(!Settings.OverlayHidden && (_connected || o.IsUnlocked));
+            o.SetShown(!Settings.OverlayHidden && (_connected || o.IsUnlocked || Settings.ShowOutsideSession));
+        }
+
+        public void SetShowOutsideSession(bool show)
+        {
+            Settings.ShowOutsideSession = show;
+            Settings.Save();
+            RefreshOverlayVisibility();
         }
 
         public RenderState GetRenderState()
