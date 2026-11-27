@@ -11,10 +11,17 @@ namespace LocalBloops.Telemetry
     {
         public string TrackId { get; private set; } = "";
         public string TrackDisplayName { get; private set; } = "";
+        /// <summary>Layout name, e.g. "Grand Prix Pits"; empty for single-layout tracks.</summary>
+        public string TrackConfigName { get; private set; } = "";
+
+        /// <summary>Track name with the layout in brackets when there is one.</summary>
+        public string TrackFullName =>
+            TrackConfigName.Length > 0 ? $"{TrackDisplayName} ({TrackConfigName})" : TrackDisplayName;
         public double TrackLengthMeters { get; private set; }
         public int DriverCarIdx { get; private set; } = -1;
         public string CarPath { get; private set; } = "";
         public string CarScreenName { get; private set; } = "";
+        public string CarId { get; private set; } = "";
 
         public bool HasCombo => TrackId.Length > 0 && CarPath.Length > 0;
 
@@ -22,7 +29,7 @@ namespace LocalBloops.Telemetry
         public string ComboKey => HasCombo ? Sanitize(TrackId + "_" + CarPath) : "";
 
         public string Describe() =>
-            HasCombo ? $"{TrackDisplayName} · {CarScreenName}" : "Unknown track/car";
+            HasCombo ? $"{TrackFullName} · {CarScreenName}" : "Unknown track/car";
 
         public static SessionInfo Parse(string yaml)
         {
@@ -30,6 +37,7 @@ namespace LocalBloops.Telemetry
             {
                 TrackId = Value(yaml, "TrackID"),
                 TrackDisplayName = Value(yaml, "TrackDisplayName"),
+                TrackConfigName = Value(yaml, "TrackConfigName"),
             };
 
             var len = Regex.Match(yaml, @"^\s*TrackLength:\s*([\d.]+)\s*(km|mi)", RegexOptions.Multiline);
@@ -44,6 +52,7 @@ namespace LocalBloops.Telemetry
                 string block = DriverBlock(yaml, idx);
                 info.CarPath = Value(block, "CarPath");
                 info.CarScreenName = Value(block, "CarScreenName");
+                info.CarId = Value(block, "CarID");
             }
             return info;
         }

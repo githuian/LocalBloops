@@ -23,6 +23,8 @@ namespace LocalBloops
         private readonly WF.ToolStripMenuItem _startup;
         private readonly WF.ToolStripMenuItem _pinnable;
         private readonly WF.ToolStripMenuItem _outsideSession;
+        private readonly WF.ToolStripMenuItem _garage61Search;
+        private readonly WF.ToolStripMenuItem _garage61Save;
 
         public TrayIcon(AppController controller)
         {
@@ -47,10 +49,15 @@ namespace LocalBloops
 
             _outsideSession = new WF.ToolStripMenuItem("Show when not in a session", null, (_, _) => { _controller.SetShowOutsideSession(!_controller.Settings.ShowOutsideSession); Refresh(); });
 
+            _garage61Search = new WF.ToolStripMenuItem("Open Garage 61 search", null, (_, _) => _controller.OpenGarage61Search());
+            _garage61Save = new WF.ToolStripMenuItem("Save Garage 61 link for this track/car (from clipboard)", null, (_, _) => _controller.SaveGarage61LinkFromClipboard());
+
             var menu = new WF.ContextMenuStrip();
             menu.Items.Add(_status);
             menu.Items.Add(_reference);
             menu.Items.Add(new WF.ToolStripSeparator());
+            menu.Items.Add(_garage61Search);
+            menu.Items.Add(_garage61Save);
             menu.Items.Add(new WF.ToolStripMenuItem("Load reference from Garage 61 CSV…", null, (_, _) => _controller.BrowseForGarage61Csv()));
             menu.Items.Add(new WF.ToolStripMenuItem("Load reference from .ibt…", null, (_, _) => _controller.BrowseForIbt()));
             menu.Items.Add(new WF.ToolStripMenuItem("Use my best lap", null, (_, _) => _controller.UseBestLap()));
@@ -98,6 +105,12 @@ namespace LocalBloops
             _startup.Checked = StartupRegistration.IsEnabled;
             _pinnable.Checked = _controller.Settings.PinnableWindow;
             _outsideSession.Checked = _controller.Settings.ShowOutsideSession;
+            bool inSession = _controller.Connected && Garage61Links.InSession(session);
+            // "&" would become a mnemonic underline in menu text, so double it.
+            _garage61Search.Text = inSession
+                ? "Search Garage 61: " + Truncate(session!.Describe(), 80).Replace("&", "&&")
+                : "Open Garage 61 search";
+            _garage61Save.Visible = inSession;
 
             string tip = "LocalBloops — " + (_controller.Connected ? "connected" : "waiting for iRacing");
             _icon.Text = Truncate(tip, 63);

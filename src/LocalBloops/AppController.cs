@@ -230,7 +230,7 @@ namespace LocalBloops
             if (diff > 0.03)
             {
                 _tray?.Notify("Reference may be for another track",
-                    $"Garage 61 lap: {r.Lap.TrackName} ({r.Lap.TrackLengthMeters / 1000:0.00} km). Session: {s.TrackDisplayName} ({s.TrackLengthMeters / 1000:0.00} km).");
+                    $"Garage 61 lap: {r.Lap.TrackName} ({r.Lap.TrackLengthMeters / 1000:0.00} km). Session: {s.TrackFullName} ({s.TrackLengthMeters / 1000:0.00} km).");
             }
         }
 
@@ -274,7 +274,7 @@ namespace LocalBloops
         private static void Stamp(LapData lap, SessionInfo s)
         {
             lap.ComboKey = s.ComboKey;
-            lap.TrackName = s.TrackDisplayName;
+            lap.TrackName = s.TrackFullName;
             lap.CarName = s.CarScreenName;
             lap.TrackLengthMeters = s.TrackLengthMeters;
         }
@@ -446,6 +446,54 @@ namespace LocalBloops
             Settings.OffTrackInvalidatesLap = value;
             _recorder.OffTrackInvalidates = value;
             Settings.Save();
+        }
+
+        /// <summary>
+        /// Opens Garage 61's lap search in the default browser, filtered to the current track/car
+        /// while iRacing is in a session. LocalBloops itself still never contacts Garage 61.
+        /// </summary>
+        public void OpenGarage61Search()
+        {
+            var session = _connected ? _session : null;
+            var url = Garage61Links.SearchUrl(session, Settings, out bool filtered);
+            try
+            {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                _tray?.Notify("Couldn't open browser", ex.Message);
+                return;
+            }
+            if (!filtered && Garage61Links.InSession(session))
+            {
+                _tray?.Notify("Garage 61 doesn't know this combo yet",
+                    "Pick this track and car in the search, copy the address bar, then choose \"Save Garage 61 link\" in the tray menu.");
+            }
+        }
+
+        /// <summary>Remembers the Garage 61 IDs from a filtered search URL on the clipboard for this track/car.</summary>
+        public void SaveGarage61LinkFromClipboard()
+        {
+            var session = _connected ? _session : null;
+            string? text = null;
+            try
+            {
+                if (System.Windows.Forms.Clipboard.ContainsText()) text = System.Windows.Forms.Clipboard.GetText();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Clipboard: " + ex.Message);
+            }
+
+            if (!Garage61Links.TryLearn(text, session, Settings))
+            {
+                _tray?.Notify("No Garage 61 link on the clipboard",
+                    "Copy the address of a Garage 61 lap search filtered to one track and one car, e.g. garage61.net/app/laps/396/8.");
+                return;
+            }
+            Settings.Save();
+            _tray?.Notify("Garage 61 link saved", $"The search now opens filtered for {session!.Describe()}.");
         }
 
         public void OpenLapsFolder()

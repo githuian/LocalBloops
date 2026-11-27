@@ -91,6 +91,12 @@ namespace LocalBloops
         /// <summary>Garage 61 CSV used as the reference; reloaded on startup.</summary>
         public string? Garage61Reference { get; set; }
 
+        /// <summary>Garage 61 track IDs saved from search links, keyed by iRacing TrackID.</summary>
+        public Dictionary<string, int> Garage61Tracks { get; set; } = new Dictionary<string, int>();
+
+        /// <summary>Garage 61 car IDs saved from search links, keyed by iRacing CarID.</summary>
+        public Dictionary<string, int> Garage61Cars { get; set; } = new Dictionary<string, int>();
+
         private static readonly JsonSerializerOptions Json = new JsonSerializerOptions { WriteIndented = true };
 
         public static Settings Load()
