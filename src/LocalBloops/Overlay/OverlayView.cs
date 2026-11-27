@@ -110,7 +110,7 @@ namespace LocalBloops.Overlay
             // Big gear readout in a column on the right, spanning both trace panels.
             double gearW = Math.Clamp(avail * 0.75, 56, Math.Max(56, w * 0.25));
             var gearRect = new Rect(w - Pad - gearW, top, gearW, avail);
-            DrawGearPanel(dc, gearRect, st, dpi);
+            DrawGearPanel(dc, gearRect, st, _controller.Settings.UseMph, dpi);
 
             double traceW = Math.Max(20, gearRect.Left - 6 - Pad);
             var speedRect = new Rect(Pad, top, traceW, avail * 0.56 - 3);
@@ -244,10 +244,11 @@ namespace LocalBloops.Overlay
         }
 
         /// <summary>
-        /// Current gear in large text. Green when lower than the reference gear at this point of the
-        /// lap, red when higher, white when equal (or when there's no reference).
+        /// Speed delta to the reference on top (green when faster, red when slower), then the current
+        /// gear in large text: green when lower than the reference gear at this point of the lap, red
+        /// when higher, white when equal (or when there's no reference).
         /// </summary>
-        private static void DrawGearPanel(DrawingContext dc, Rect r, RenderState st, double dpi)
+        private static void DrawGearPanel(DrawingContext dc, Rect r, RenderState st, bool mph, double dpi)
         {
             if (r.Height < 10 || r.Width < 10) return;
             dc.DrawRoundedRectangle(PanelBrush, null, r, 4, 4);
@@ -266,9 +267,29 @@ namespace LocalBloops.Overlay
             }
 
             double labelH = r.Height * 0.2;
-            double size = Math.Max(10, Math.Min((r.Height - labelH) * 0.95, r.Width * 1.1));
+            double deltaH = r.Height * 0.24;
+
+            // Speed delta (live minus reference at the same lap-distance), in the chosen units.
+            string deltaText = "–";
+            Brush deltaBrush = DimText;
+            if (reference != null)
+            {
+                double k = mph ? 2.236936 : 3.6;
+                double dv = (st.Frame.Speed - LapData.Sample(reference.Speed, st.Frame.LapDistPct)) * k;
+                int rounded = (int)Math.Round(dv);
+                deltaText = (rounded > 0 ? "+" : rounded < 0 ? "-" : "±") + Math.Abs(rounded).ToString(CultureInfo.InvariantCulture);
+                deltaBrush = rounded > 0 ? Ahead : rounded < 0 ? Behind : Text;
+            }
+            var dft = Format(deltaText, Math.Clamp(deltaH * 0.7, 10, r.Width * 0.4), deltaBrush, dpi, Mono);
+            dft.MaxTextWidth = Math.Max(10, r.Width - 4);
+            dft.MaxLineCount = 1;
+            dc.DrawText(dft, new Point(r.Left + (r.Width - dft.Width) / 2, r.Top + 3));
+
+            double bigArea = r.Height - labelH - deltaH;
+            // Line height is ~1.33x the font size, so this keeps the digit inside its slot.
+            double size = Math.Max(10, Math.Min(bigArea * 0.75, r.Width * 1.1));
             var big = Format(GearText(gear), size, brush, dpi, UiBold);
-            double bigTop = r.Top + (r.Height - labelH - big.Height) / 2;
+            double bigTop = r.Top + deltaH + (bigArea - big.Height) / 2;
             dc.DrawText(big, new Point(r.Left + (r.Width - big.Width) / 2, bigTop));
 
             string sub = refGear is int g ? "ref " + GearText(g) : "gear";
